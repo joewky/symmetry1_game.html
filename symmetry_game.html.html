@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>尋找十字架的對稱軸大挑戰</title>
+  <style>
+    :root {
+      --bg-pink: #fdf2f8;
+      --bg-purple: #f3e8ff;
+      --card-bg: #ffffff;
+      --primary: #7e22ce;
+      --primary-light: #a855f7;
+      --accent-yellow: #fde047;
+      --accent-yellow-dark: #eab308;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --border-soft: #e9d5ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      margin: 0;
+      font-family: "PingFang HK", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+      background: linear-gradient(135deg, var(--bg-pink) 0%, var(--bg-purple) 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 頂部標題與狀態列 */
+    header {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 2px solid var(--border-soft);
+      padding: 10px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 2px 10px rgba(126, 34, 206, 0.08);
+      z-index: 10;
+    }
+
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title-badge {
+      background: var(--primary);
+      color: #fff;
+      font-weight: bold;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timer-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fef9c3;
+      border: 2px solid #facc15;
+      color: #854d0e;
+      font-weight: 800;
+      font-size: 1.1rem;
+      padding: 5px 14px;
+      border-radius: 12px;
+      font-variant-numeric: tabular-nums;
+      transition: all 0.3s ease;
+    }
+
+    .timer-box.warning {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #b91c1c;
+      animation: pulseWarn 1s infinite;
+    }
+
+    @keyframes pulseWarn {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.2s;
+      font-family: inherit;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-tip {
+      background: #fef08a;
+      color: #854d0e;
+      border: 2px solid #eab308;
+    }
+    .btn-tip:hover { background: #fde047; }
+
+    .btn-secondary {
+      background: #f3e8ff;
+      color: var(--primary);
+      border: 1.5px solid #d8b4fe;
+    }
+    .btn-secondary:hover { background: #e9d5ff; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #9333ea, #6b21a8);
+      color: white;
+      box-shadow: 0 4px 12px rgba(126, 34, 206, 0.28);
+      font-size: 1rem;
+      padding: 10px 20px;
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-danger-soft {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1.5px solid #fca5a5;
+    }
+    .btn-danger-soft:hover { background: #fecaca; }
+
+    /* 關卡選擇列 */
+    .level-tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 16px 0;
+    }
+
+    .level-tab {
+      background: rgba(255, 255, 255, 0.7);
+      border: 2px solid #d8b4fe;
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .level-tab.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 3px 8px rgba(126, 34, 206, 0.25);
+    }
+
+    /* 主遊戲區佈局 */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 12px 16px 20px;
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 880px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border-radius: 20px;
+      border: 2px solid var(--border-soft);
+      box-shadow: 0 8px 24px rgba(126, 34, 206, 0.07);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .instruction-banner {
+      background: #faf5ff;
+      border-left: 5px solid var(--primary);
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .instruction-banner strong {
+      color: var(--primary);
+    }
+
+    /* 畫布容器 */
+    .canvas-wrapper {
+      position: relative;
+      flex: 1;
+      min-height: 360px;
+      background: #ffffff;
+      border: 2px dashed #c084fc;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    canvas#gameCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .canvas-hint-tag {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(31, 41, 55, 0.78);
+      color: #fff;
+      font-size: 0.82rem;
+      padding: 5px 12px;
+      border-radius: 999px;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    /* 回饋訊息區 */
+    .feedback-box {
+      margin-top: 12px;
+      min-height: 54px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.96rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f3f4f6;
+      color: #374151;
+      border: 1.5px solid #e5e7eb;
+      transition: all 0.25s ease;
+    }
+
+    .feedback-box.success {
+      background: #dcfce7;
+      border-color: #4ade80;
+      color: #14532d;
+    }
+
+    .feedback-box.error {
+      background: #fef2f2;
+      border-color: #f87171;
+      color: #7f1d1d;
+    }
+
+    .feedback-box.info {
+      background: #eff6ff;
+      border-color: #93c5fd;
+      color: #1e3a8a;
+    }
+
+    .action-row {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 右側四人小組圖卡區 */
+    .cards-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #f3e8ff;
+    }
+
+    .cards-header h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+
+    .progress-pill {
+      background: #f3e8ff;
+      color: var(--primary);
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      flex: 1;
+    }
+
+    .symmetry-card {
+      background: #fdf4ff;
+      border: 2px solid #e9d5ff;
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .symmetry-card.found {
+      background: #fefce8;
+      border-color: #eab308;
+      box-shadow: 0 4px 14px rgba(234, 179, 8, 0.22);
+    }
+
+    .card-top {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .student-tag {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #6b21a8;
+      background: #f3e8ff;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+
+    .bulb-icon {
+      font-size: 1.5rem;
+      filter: grayscale(100%) opacity(0.35);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .symmetry-card.found .bulb-icon {
+      filter: grayscale(0%) opacity(1) drop-shadow(0 0 8px rgba(250, 204, 21, 0.9));
+      transform: scale(1.2);
+    }
+
+    .mini-svg {
+      width: 110px;
+      height: 110px;
+      margin: 6px 0;
+    }
+
+    .card-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .symmetry-card.found .card-label {
+      color: #854d0e;
+    }
+
+    /* 彈出視窗 (Modal) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.58);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: 22px;
+      max-width: 520px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+      border: 3px solid #e9d5ff;
+      animation: popIn 0.25s ease;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-card h3 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 1.35rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tip-step {
+      background: #faf5ff;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-left: 4px solid #a855f7;
+      line-height: 1.55;
+      font-size: 0.95rem;
+    }
+
+    .modal-footer {
+      margin-top: 18px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="title-area">
+      <span class="title-badge">小學數學 • 軸對稱圖形</span>
+      <h1>尋找十字架的對稱軸大挑戰</h1>
+    </div>
+
+    <div class="controls-bar">
+      <div class="timer-box" id="timerBox" title="限時 5 分鐘">
+        ⏱️ <span id="timerText">05:00</span>
+      </div>
+      <button class="btn btn-tip" id="btnOpenTips">💡 小貼士</button>
+      <button class="btn btn-secondary" id="btnToggleGrid">📏 顯示格線</button>
+      <button class="btn btn-secondary" id="btnMute">🔊 音效：開</button>
+      <button class="btn btn-danger-soft" id="btnResetAll">🔄 重新開始</button>
+    </div>
+  </header>
+
+  <div class="level-tabs" id="levelTabs">
+    <button class="level-tab active" data-level="crossEqual">關卡 1：課本十字架（4條）</button>
+    <button class="level-tab" data-level="crossLong">關卡 2：長臂十字架（2條）</button>
+    <button class="level-tab" data-level="square">關卡 3：正方形（4條）</button>
+    <button class="level-tab" data-level="triangle">關卡 4：等邊三角形（3條）</button>
+  </div>
+
+  <main>
+    <!-- 左側操作畫布區 -->
+    <section class="panel">
+      <div class="instruction-banner" id="instructionText">
+        <strong>任務說明：</strong>四人一組，嘗試用不同的方法對摺圖卡，使兩邊<strong>完全重疊</strong>。請在下方圖形上<strong>拖曳畫出一條虛線</strong>（或先後點擊兩點），再按「模擬對摺驗證」！
+      </div>
+
+      <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div class="canvas-hint-tag">👆 用滑鼠或手指拖曳畫線，或點擊起點與終點</div>
+      </div>
+
+      <div class="feedback-box info" id="feedbackBox">
+        <span>👋</span>
+        <span id="feedbackText">請在黃色圖形上畫出一條對稱軸虛線，然後點擊「模擬對摺驗證」！</span>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-secondary" id="btnClearLine">🧹 清除目前虛線</button>
+        <button class="btn btn-primary" id="btnVerify" disabled>✨ 模擬對摺驗證</button>
+      </div>
+    </section>
+
+    <!-- 右側四人小組圖卡記錄區 -->
+    <section class="panel">
+      <div class="cards-header">
+        <h2>👥 小組對稱軸收集圖卡</h2>
+        <span class="progress-pill" id="progressPill">已找到：0 / 4</span>
+      </div>
+
+      <div class="cards-grid" id="cardsGrid">
+        <!-- 由 JS 動態生成圖卡 -->
+      </div>
+    </section>
+  </main>
+
+  <!-- 小貼士彈窗 -->
+  <div class="modal-backdrop" id="tipsModal">
+    <div class="modal-card">
+      <h3>💡 對稱軸尋找小貼士</h3>
+      <div class="tip-step">
+        <strong>1. 什麼是「對稱軸」？</strong><br>
+        如果把一個平面圖形沿著某條直線對摺後，直線兩旁的圖形能夠<strong>大小相同、形狀一致、完全重疊</strong>，這條直線就是「對稱軸」，通常用<strong>虛線</strong>表示。
+      </div>
+      <div class="tip-step">
+        <strong>2. 尋找十字架對稱軸 3 步曲：</strong><br>
+        • <strong>必過中心：</strong>所有的對稱軸都一定會穿過圖形最正中的中心點。<br>
+        • <strong>先直後橫：</strong>先試試「上下垂直對摺」和「左右水平對摺」。<br>
+        • <strong>再試斜線：</strong>把對角線連接起來（左上到右下、右上到左下），看看四隻「手臂」的長度一不一樣！
+      </div>
+      <div class="tip-step">
+        <strong>3. 操作小技巧：</strong><br>
+        在畫布上按住滑鼠（或手指）由一邊拉到另一邊即可畫出虛線；如果覺得角度不夠準，可以打開上方的「📏 顯示格線」幫手！
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnCloseTips">我明白了，繼續挑戰！</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 過關 / 時間到總結彈窗 -->
+  <div class="modal-backdrop" id="resultModal">
+    <div class="modal-card">
+      <h3 id="resultTitle">🎉 恭喜完成挑戰！</h3>
+      <p id="resultBody" style="font-size: 1.05rem; line-height: 1.6;"></p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnReplayLevel">🔄 再玩一次本關</button>
+        <button class="btn btn-primary" id="btnNextLevel">➡️ 挑戰下一關</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 音效系統 (Web Audio API) ====================
+    let isMuted = false;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playTone(freq, type = 'sine', duration = 0.18, delay = 0) {
+      if (isMuted) return;
+      if (!audioCtx) audioCtx = new AudioCtx();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(audioCtx.currentTime + delay);
+      osc.stop(audioCtx.currentTime + delay + duration);
+    }
+
+    function playSuccessSound() {
+      playTone(523.25, 'triangle', 0.15, 0);    // C5
+      playTone(659.25, 'triangle', 0.15, 0.12); // E5
+      playTone(783.99, 'triangle', 0.25, 0.24); // G5
+      playTone(1046.5, 'triangle', 0.35, 0.36); // C6
+    }
+
+    function playErrorSound() {
+      playTone(260, 'sawtooth', 0.18, 0);
+      playTone(210, 'sawtooth', 0.28, 0.15);
+    }
+
+    function playTickSound() {
+      playTone(880, 'sine', 0.05, 0);
+    }
+
+    // ==================== 關卡資料定義 ====================
+    const LEVELS = {
+      crossEqual: {
+        name: '課本十字架',
+        desc: '四隻手臂一樣長的十字架，共有幾條對稱軸呢？',
+        axes: [
+          { angle: 90, label: '垂直對稱軸（上下對摺）', student: '組員 A' },
+          { angle: 0, label: '水平對稱軸（左右對摺）', student: '組員 B' },
+          { angle: 45, label: '斜向對稱軸（左上至右下）', student: '組員 C' },
+          { angle: 135, label: '斜向對稱軸（右上至左下）', student: '組員 D' }
+        ],
+        getPolygon: (cx, cy, size) => {
+          const a = size * 0.28; // 臂半寬
+          const L = size * 0.85; // 臂半長
+          return [
+            { x: cx - a, y: cy - L }, { x: cx + a, y: cy - L },
+            { x: cx + a, y: cy - a }, { x: cx + L, y: cy - a },
+            { x: cx + L, y: cy + a }, { x: cx + a, y: cy + a },
+            { x: cx + a, y: cy + L }, { x: cx - a, y: cy + L },
+            { x: cx - a, y: cy + a }, { x: cx - L, y: cy + a },
+            { x: cx - L, y: cy - a }, { x: cx - a, y: cy - a }
+          ];
+        }
+      },
+      crossLong: {
+        name: '長臂十字架',
+        desc: '上下較長、左右較短的十字架！小心斜線對摺能否重疊？',
+        axes: [
+          { angle: 90, label: '垂直對稱軸（上下對摺）', student: '組員 A' },
+          { angle: 0, label: '水平對稱軸（左右對摺）', student: '組員 B' }
+        ],
+        getPolygon: (cx, cy, size) => {
+          const a = size * 0.24;
+          const Lx = size * 0.62;
+          const Ly = size * 0.92;
+          return [
+            { x: cx - a, y: cy - Ly }, { x: cx + a, y: cy - Ly },
+            { x: cx + a, y: cy - a },  { x: cx + Lx, y: cy - a },
+            { x: cx + Lx, y: cy + a }, { x: cx + a, y: cy + a },
+            { x: cx + a, y: cy + Ly }, { x: cx - a, y: cy + Ly },
+            { x: cx - a, y: cy + a },  { x: cx - Lx, y: cy + a },
+            { x: cx - Lx, y: cy - a }, { x: cx - a, y: cy - a }
+          ];
+        }
+      },
+      square: {
+        name: '正方形',
+        desc: '四條邊相等、四個角都是直角的正方形，共有 4 條對稱軸。',
+        axes: [
+          { angle: 90, label: '垂直中線對稱軸', student: '組員 A' },
+          { angle: 0, label: '水平中線對稱軸', student: '組員 B' },
+          { angle: 45, label: '對角線對稱軸（╲）', student: '組員 C' },
+          { angle: 135, label: '對角線對稱軸（╱）', student: '組員 D' }
+        ],
+        getPolygon: (cx, cy, size) => {
+          const s = size * 0.72;
+          return [
+            { x: cx - s, y: cy - s },
+            { x: cx + s, y: cy - s },
+            { x: cx + s, y: cy + s },
+            { x: cx - s, y: cy + s }
+          ];
+        }
+      },
+      triangle: {
+        name: '等邊三角形',
+        desc: '三條邊一樣長的等邊三角形，找出它的 3 條對稱軸！',
+        axes: [
+          { angle: 90, label: '頂點垂直對稱軸', student: '組員 A' },
+          { angle: 30, label: '左下角斜向對稱軸', student: '組員 B' },
+          { angle: 150, label: '右下角斜向對稱軸', student: '組員 C' }
+        ],
+        getPolygon: (cx, cy, size) => {
+          const R = size * 0.92;
+          const offsetY = R * 0.18;
+          const pts = [];
+          for (let i = 0; i < 3; i++) {
+            const rad = (-90 + i * 120) * Math.PI / 180;
+            pts.push({
+              x: cx + R * Math.cos(rad),
+              y: cy + offsetY + R * Math.sin(rad)
+            });
+          }
+          return pts;
+        }
+      }
+    };
+
+    const PRAISES = [
+      '🎉 太棒了！兩邊完全重疊，你找到了一條正確的對稱軸！',
+      '🌟 好眼力！對摺後分毫不差，小組燈泡亮起來了！',
+      '👏 叻仔／叻女！這條虛線準確穿過中心，完全對稱！',
+      '🏆 滿分表現！圖形兩邊一模一樣，繼續尋找下一條吧！'
+    ];
+
+    // ==================== 遊戲狀態 ====================
+    let currentLevelKey = 'crossEqual';
+    let foundAxes = []; // 存放已找到的 axis index
+    let showGrid = false;
+    let timeLeft = 300; // 5 分鐘 = 300 秒
+    let timerInterval = null;
+    let isGameOver = false;
+
+    // 畫線狀態
+    let currentLine = null; // { x1, y1, x2, y2 }
+    let isDrawing = false;
+    let clickStartPt = null;
+
+    // 動畫狀態
+    let animProgress = 0;
+    let isAnimating = false;
+    let animResult = null; // { isValid, matchedAxisIdx, hintMsg, extendedLine }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const wrapper = document.getElementById('canvasWrapper');
+
+    // ==================== 計時器控制 ====================
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = 300;
+      isGameOver = false;
+      updateTimerDisplay();
+
+      timerInterval = setInterval(() => {
+        if (isGameOver) return;
+        timeLeft--;
+        updateTimerDisplay();
+
+        if (timeLeft <= 10 && timeLeft > 0) {
+          playTickSound();
+        }
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          isGameOver = true;
+          handleTimeUp();
+        }
+      }, 1000);
+    }
+
+    function updateTimerDisplay() {
+      const mins = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+      const secs = String(timeLeft % 60).padStart(2, '0');
+      const timerText = document.getElementById('timerText');
+      const timerBox = document.getElementById('timerBox');
+      timerText.textContent = `${mins}:${secs}`;
+
+      if (timeLeft <= 60) {
+        timerBox.classList.add('warning');
+      } else {
+        timerBox.classList.remove('warning');
+      }
+    }
+
+    function handleTimeUp() {
+      playErrorSound();
+      const level = LEVELS[currentLevelKey];
+      document.getElementById('resultTitle').textContent = '⏰ 5 分鐘時間到！';
+      document.getElementById('resultBody').innerHTML =
+        `你在限時內於「<strong>${level.name}</strong>」找到了 <strong>${foundAxes.length} / ${level.axes.length}</strong> 條對稱軸！<br>要再挑戰一次，把全部小燈泡都點亮嗎？`;
+      document.getElementById('resultModal').classList.add('open');
+    }
+
+    // ==================== 幾何與對稱中心計算 ====================
+    function getShapeCenter() {
+      const rect = canvas.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const size = Math.min(rect.width, rect.height) * 0.42;
+      if (currentLevelKey === 'triangle') {
+        const R = size * 0.92;
+        return { cx, cy: cy + R * 0.18, size };
+      }
+      return { cx, cy, size };
+    }
+
+    // 計算點到直線的垂直距離
+    function pointToLineDistance(px, py, x1, y1, x2, y2) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.hypot(dx, dy);
+      if (len === 0) return Infinity;
+      return Math.abs(dy * px - dx * py + x2 * y1 - y2 * x1) / len;
+    }
+
+    // 將角度正規化到 [0, 180)
+    function normalizeAngleDeg(rad) {
+      let deg = (rad * 180 / Math.PI) % 180;
+      if (deg < 0) deg += 180;
+      return deg;
+    }
+
+    function angleDiffDeg(a, b) {
+      let diff = Math.abs(a - b) % 180;
+      return diff > 90 ? 180 - diff : diff;
+    }
+
+    // 驗證使用者畫的線
+    function evaluateUserLine(line) {
+      const level = LEVELS[currentLevelKey];
+      const { cx, cy, size } = getShapeCenter();
+      const distFromCenter = pointToLineDistance(cx, cy, line.x1, line.y1, line.x2, line.y2);
+      const userAngle = normalizeAngleDeg(Math.atan2(line.y2 - line.y1, line.x2 - line.x1));
+
+      // 延伸線段方便顯示對摺軸
+      const rad = Math.atan2(line.y2 - line.y1, line.x2 - line.x1);
+      const extLen = Math.max(canvas.width, canvas.height);
+      const midX = (line.x1 + line.x2) / 2;
+      const midY = (line.y1 + line.y2) / 2;
+      const extendedLine = {
+        x1: midX - Math.cos(rad) * extLen,
+        y1: midY - Math.sin(rad) * extLen,
+        x2: midX + Math.cos(rad) * extLen,
+        y2: midY + Math.sin(rad) * extLen
+      };
+
+      // 檢查是否符合某一條正確對稱軸
+      const maxCenterDist = size * 0.13;
+      const maxAngleTol = 9.5; // 容許約 9.5 度操作誤差
+
+      let matchedIdx = -1;
+      let bestAngleDiff = 999;
+
+      level.axes.forEach((ax, idx) => {
+        const diff = angleDiffDeg(userAngle, ax.angle);
+        if (diff < bestAngleDiff) bestAngleDiff = diff;
+        if (distFromCenter <= maxCenterDist && diff <= maxAngleTol) {
+          matchedIdx = idx;
+        }
+      });
+
+      if (matchedIdx !== -1) {
+        return {
+          isValid: true,
+          matchedAxisIdx: matchedIdx,
+          extendedLine,
+          hintMsg: ''
+        };
+      }
+
+      // 產生智能小提示
+      let hintMsg = '';
+      if (distFromCenter > maxCenterDist) {
+        hintMsg = '💡 小提示：對摺後兩邊沒有重疊！你的虛線偏離了圖形的正中心點，試試讓虛線穿過正中央。';
+      } else if (currentLevelKey === 'crossLong' && (angleDiffDeg(userAngle, 45) < 15 || angleDiffDeg(userAngle, 135) < 15)) {
+        hintMsg = '💡 小提示：留意這個長臂十字架！上下手臂比左右長，沿斜線對摺時長臂和短臂無法完全重疊喔！';
+      } else if (bestAngleDiff <= 22) {
+        hintMsg = '💡 小提示：方向非常接近了！角度還差一點點，可以打開「📏 顯示格線」幫你把虛線對得更直更準。';
+      } else {
+        hintMsg = '💡 小提示：沿著這條線對摺，紅色突出部分無法重疊。想想看怎樣摺才能讓左右或上下兩半完全一樣？';
+      }
+
+      return {
+        isValid: false,
+        matchedAxisIdx: -1,
+        extendedLine,
+        hintMsg
+      };
+    }
+
+    // ==================== 畫布繪製與 3D 對摺動畫 ====================
+    function resizeCanvas() {
+      const rect = wrapper.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawScene();
+    }
+
+    function drawGrid(w, h) {
+      ctx.save();
+      ctx.strokeStyle = '#f3e8ff';
+      ctx.lineWidth = 1;
+      const step = 25;
+      for (let x = (w / 2) % step; x < w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = (h / 2) % step; y < h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawPolygon(pts, fill, stroke, lineWidth = 3, dash = []) {
+      if (!pts || pts.length === 0) return;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(pts[i].x, pts[i].y);
+      }
+      ctx.closePath();
+      ctx.setLineDash(dash);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 計算點 P 關於直線 (x1,y1)-(x2,y2) 的對稱點（支援動畫進度 t: 0 -> 1）
+    function reflectPoint(p, x1, y1, x2, y2, t = 1) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq === 0) return p;
+      const u = ((p.x - x1) * dx + (p.y - y1) * dy) / lenSq;
+      const projX = x1 + u * dx;
+      const projY = y1 + u * dy;
+      const refX = 2 * projX - p.x;
+      const refY = 2 * projY - p.y;
+      return {
+        x: p.x + (refX - p.x) * t,
+        y: p.y + (refY - p.y) * t
+      };
+    }
+
+    function drawDashedAxis(x1, y1, x2, y2, color = '#9333ea', width = 3.5) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([10, 7]);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.lineCap = 'round';
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawScene() {
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (showGrid) drawGrid(w, h);
+
+      const level = LEVELS[currentLevelKey];
+      const baseCx = w / 2;
+      const baseCy = h / 2;
+      const size = Math.min(w, h) * 0.42;
+      const poly = level.getPolygon(baseCx, baseCy, size);
+
+      // 1. 繪製主圖形
+      drawPolygon(poly, '#fde047', '#ca8a04', 3);
+
+      // 2. 繪製已找到的對稱軸（淡紫色提示線）
+      const { cx, cy } = getShapeCenter();
+      foundAxes.forEach(idx => {
+        const ax = level.axes[idx];
+        const rad = ax.angle * Math.PI / 180;
+        const r = size * 1.15;
+        drawDashedAxis(
+          cx - Math.cos(rad) * r,
+          cy - Math.sin(rad) * r,
+          cx + Math.cos(rad) * r,
+          cy + Math.sin(rad) * r,
+          'rgba(22, 163, 74, 0.55)',
+          2.5
+        );
+      });
+
+      // 3. 繪製模擬對摺的翻轉投影
+      if (isAnimating && animResult) {
+        const ext = animResult.extendedLine;
+        const foldedPoly = poly.map(p => reflectPoint(p, ext.x1, ext.y1, ext.x2, ext.y2, animProgress));
+        if (animResult.isValid) {
+          drawPolygon(foldedPoly, 'rgba(34, 197, 94, 0.32)', '#16a34a', 3, [6, 4]);
+        } else {
+          drawPolygon(foldedPoly, 'rgba(239, 68, 68, 0.28)', '#dc2626', 3, [6, 4]);
+        }
+      }
+
+      // 4. 繪製使用者目前畫的虛線
+      if (currentLine) {
+        const lineColor = isAnimating && animResult
+          ? (animResult.isValid ? '#16a34a' : '#dc2626')
+          : '#7e22ce';
+        drawDashedAxis(currentLine.x1, currentLine.y1, currentLine.x2, currentLine.y2, lineColor, 4);
+
+        // 端點圓點
+        [
+          { x: currentLine.x1, y: currentLine.y1 },
+          { x: currentLine.x2, y: currentLine.y2 }
+        ].forEach(pt => {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+          ctx.fillStyle = lineColor;
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        });
+      }
+
+      // 5. 若使用兩點點擊模式，顯示第一個點
+      if (clickStartPt && !isDrawing) {
+        ctx.beginPath();
+        ctx.arc(clickStartPt.x, clickStartPt.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = '#9333ea';
+        ctx.fill();
+      }
+    }
+
+    // ==================== 互動操作（支援滑鼠、觸控、兩點點擊） ====================
+    function getPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    function onPointerDown(e) {
+      if (isAnimating || isGameOver) return;
+      e.preventDefault();
+      const pos = getPointerPos(e);
+      isDrawing = true;
+      currentLine = { x1: pos.x, y1: pos.y, x2: pos.x, y2: pos.y };
+      drawScene();
+    }
+
+    function onPointerMove(e) {
+      if (!isDrawing || isAnimating || isGameOver) return;
+      e.preventDefault();
+      const pos = getPointerPos(e);
+      currentLine.x2 = pos.x;
+      currentLine.y2 = pos.y;
+      drawScene();
+    }
+
+    function onPointerUp(e) {
+      if (!isDrawing) return;
+      isDrawing = false;
+      const len = Math.hypot(currentLine.x2 - currentLine.x1, currentLine.y2 - currentLine.y1);
+
+      // 如果拖曳距離太短，視為「兩點點擊連線」模式
+      if (len < 18) {
+        if (!clickStartPt) {
+          clickStartPt = { x: currentLine.x1, y: currentLine.y1 };
+          currentLine = null;
+          setFeedback('info', '📍 已設定起點！請在圖形另一端點擊終點完成虛線。');
+        } else {
+          const distTwoClicks = Math.hypot(currentLine.x1 - clickStartPt.x, currentLine.y1 - clickStartPt.y);
+          if (distTwoClicks >= 25) {
+            currentLine = {
+              x1: clickStartPt.x,
+              y1: clickStartPt.y,
+              x2: currentLine.x1,
+              y2: currentLine.y1
+            };
+            clickStartPt = null;
+            document.getElementById('btnVerify').disabled = false;
+            setFeedback('info', '✏️ 虛線已畫好！請點擊「✨ 模擬對摺驗證」看看兩邊能否重疊。');
+          } else {
+            clickStartPt = null;
+            currentLine = null;
+            document.getElementById('btnVerify').disabled = true;
+          }
+        }
+      } else {
+        clickStartPt = null;
+        document.getElementById('btnVerify').disabled = false;
+        setFeedback('info', '✏️ 虛線已畫好！請點擊「✨ 模擬對摺驗證」看看兩邊能否重疊。');
+      }
+      drawScene();
+    }
+
+    canvas.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+    canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+    canvas.addEventListener('touchend', onPointerUp);
+
+    // ==================== 驗證與動畫流程 ====================
+    function setFeedback(type, text) {
+      const box = document.getElementById('feedbackBox');
+      box.className = `feedback-box ${type}`;
+      document.getElementById('feedbackText').textContent = text;
+    }
+
+    document.getElementById('btnVerify').addEventListener('click', () => {
+      if (!currentLine || isAnimating || isGameOver) return;
+
+      animResult = evaluateUserLine(currentLine);
+      isAnimating = true;
+      animProgress = 0;
+      document.getElementById('btnVerify').disabled = true;
+
+      const startTime = performance.now();
+      const duration = 650;
+
+      function step(now) {
+        const elapsed = now - startTime;
+        animProgress = Math.min(1, elapsed / duration);
+        // 平滑緩動
+        animProgress = 1 - Math.pow(1 - animProgress, 3);
+        drawScene();
+
+        if (elapsed < duration) {
+          requestAnimationFrame(step);
+        } else {
+          finishVerification();
+        }
+      }
+      requestAnimationFrame(step);
+    });
+
+    function finishVerification() {
+      const level = LEVELS[currentLevelKey];
+
+      if (animResult.isValid) {
+        const idx = animResult.matchedAxisIdx;
+        if (foundAxes.includes(idx)) {
+          playTone(440, 'sine', 0.2);
+          setFeedback('info', `🔁 這條「${level.axes[idx].label}」已經找到過囉！試試從另一個方向對摺吧！`);
+        } else {
+          foundAxes.push(idx);
+          playSuccessSound();
+          renderCards();
+          const praise = PRAISES[Math.floor(Math.random() * PRAISES.length)];
+          setFeedback('success', `${praise}（${level.axes[idx].label}）`);
+        }
+      } else {
+        playErrorSound();
+        setFeedback('error', animResult.hintMsg);
+      }
+
+      setTimeout(() => {
+        isAnimating = false;
+        animResult = null;
+        if (foundAxes.length === level.axes.length) {
+          handleLevelComplete();
+        } else {
+          currentLine = null;
+          drawScene();
+        }
+      }, 1100);
+    }
+
+    function handleLevelComplete() {
+      clearInterval(timerInterval);
+      isGameOver = true;
+      const level = LEVELS[currentLevelKey];
+      const usedSecs = 300 - timeLeft;
+      const m = Math.floor(usedSecs / 60);
+      const s = usedSecs % 60;
+
+      document.getElementById('resultTitle').textContent = '🏆 恭喜全數點亮小組燈泡！';
+      document.getElementById('resultBody').innerHTML =
+        `你們小組成功找出了「<strong>${level.name}</strong>」的全部 <strong>${level.axes.length} 條對稱軸</strong>！<br>⏱️ 挑戰用時：<strong>${m} 分 ${s} 秒</strong>`;
+      document.getElementById('resultModal').classList.add('open');
+    }
+
+    // ==================== 右側小組圖卡渲染 ====================
+    function renderCards() {
+      const level = LEVELS[currentLevelKey];
+      const grid = document.getElementById('cardsGrid');
+      document.getElementById('progressPill').textContent = `已找到：${foundAxes.length} / ${level.axes.length}`;
+      grid.innerHTML = '';
+
+      level.axes.forEach((ax, idx) => {
+        const isFound = foundAxes.includes(idx);
+        const card = document.createElement('div');
+        card.className = `symmetry-card ${isFound ? 'found' : ''}`;
+
+        // 生成迷你 SVG
+        const poly = level.getPolygon(55, 55, 44);
+        const pointsStr = poly.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+        const rad = ax.angle * Math.PI / 180;
+        const cx = 55, cy = currentLevelKey === 'triangle' ? 55 + 44 * 0.92 * 0.18 : 55;
+        const r = 50;
+        const lx1 = cx - Math.cos(rad) * r;
+        const ly1 = cy - Math.sin(rad) * r;
+        const lx2 = cx + Math.cos(rad) * r;
+        const ly2 = cy + Math.sin(rad) * r;
+
+        card.innerHTML = `
+          <div class="card-top">
+            <span class="student-tag">${ax.student}</span>
+            <span class="bulb-icon" title="${isFound ? '已點亮！' : '尚未找到'}">💡</span>
+          </div>
+          <svg class="mini-svg" viewBox="0 0 110 110">
+            <polygon points="${pointsStr}" fill="#fde047" stroke="#ca8a04" stroke-width="2.5" />
+            ${isFound ? `<line x1="${lx1}" y1="${ly1}" x2="${lx2}" y2="${ly2}" stroke="#dc2626" stroke-width="3" stroke-dasharray="5,4" stroke-linecap="round" />` : ''}
+          </svg>
+          <div class="card-label">${isFound ? `✅ ${ax.label}` : '❓ 等待小組發現...'}</div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // ==================== 按鈕與關卡切換事件 ====================
+    function loadLevel(key) {
+      currentLevelKey = key;
+      foundAxes = [];
+      currentLine = null;
+      clickStartPt = null;
+      isAnimating = false;
+      animResult = null;
+      document.getElementById('btnVerify').disabled = true;
+
+      document.querySelectorAll('.level-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.level === key);
+      });
+
+      const level = LEVELS[key];
+      document.getElementById('instructionText').innerHTML =
+        `<strong>${level.name}任務：</strong>${level.desc} 請在圖形上畫出一條虛線，再按「模擬對摺驗證」！`;
+      setFeedback('info', '請在黃色圖形上畫出一條對稱軸虛線，然後點擊「模擬對摺驗證」！');
+
+      renderCards();
+      resizeCanvas();
+      startTimer();
+    }
+
+    document.querySelectorAll('.level-tab').forEach(btn => {
+      btn.addEventListener('click', () => loadLevel(btn.dataset.level));
+    });
+
+    document.getElementById('btnClearLine').addEventListener('click', () => {
+      if (isAnimating) return;
+      currentLine = null;
+      clickStartPt = null;
+      document.getElementById('btnVerify').disabled = true;
+      drawScene();
+    });
+
+    document.getElementById('btnToggleGrid').addEventListener('click', (e) => {
+      showGrid = !showGrid;
+      e.target.textContent = showGrid ? '📏 隱藏格線' : '📏 顯示格線';
+      drawScene();
+    });
+
+    document.getElementById('btnMute').addEventListener('click', (e) => {
+      isMuted = !isMuted;
+      e.target.textContent = isMuted ? '🔇 音效：關' : '🔊 音效：開';
+    });
+
+    document.getElementById('btnResetAll').addEventListener('click', () => {
+      loadLevel(currentLevelKey);
+    });
+
+    // 小貼士彈窗
+    document.getElementById('btnOpenTips').addEventListener('click', () => {
+      document.getElementById('tipsModal').classList.add('open');
+    });
+    document.getElementById('btnCloseTips').addEventListener('click', () => {
+      document.getElementById('tipsModal').classList.remove('open');
+    });
+
+    // 總結彈窗按鈕
+    document.getElementById('btnReplayLevel').addEventListener('click', () => {
+      document.getElementById('resultModal').classList.remove('open');
+      loadLevel(currentLevelKey);
+    });
+
+    document.getElementById('btnNextLevel').addEventListener('click', () => {
+      document.getElementById('resultModal').classList.remove('open');
+      const keys = Object.keys(LEVELS);
+      const nextIdx = (keys.indexOf(currentLevelKey) + 1) % keys.length;
+      loadLevel(keys[nextIdx]);
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // 啟動遊戲
+    loadLevel('crossEqual');
+  </script>
+</body>
+</html>
